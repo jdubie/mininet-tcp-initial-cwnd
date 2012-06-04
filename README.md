@@ -13,7 +13,7 @@ congestion window.
 
 Spin up our EC2 image in the AWS management console web application. AMI: `ami-0a339263`
 
-Ssh into that server (replace domain name with your instance's domain name)
+ssh into that server (replace domain name with your instance's domain name)
 
     ssh -l ubuntu ec2-xxx-xxx-xxx-xxxx.compute-1.amazonaws.com
 
@@ -30,5 +30,5 @@ Finally run the experiment
 
     sudo ./run_experiment.py
 
-To see the results open `results/mininet_yours/latencies.txt` or scp
-`results/mininet_yours/latencies.pdf` to your local computer.
+* Results will be printed to stdout and in `results/mininet_yours/latencies.txt`
+* scp `results/mininet_yours/latencies.pdf` to your local computer for a bar graph.
