@@ -34,7 +34,7 @@ parser.add_argument('--dir', '-d',
 
 parser.add_argument('--target', '-g',
                     help="Thing to get",
-		    default=29)
+                    default=27)
                     #default="payloads/google_search.html")
 
 parser.add_argument('--bw_net', '-b',
@@ -417,11 +417,6 @@ def main():
     end = time()
     cprint("Experiment took %.3f seconds" % (end - start), "yellow")
 
-    # clean up temp files
-    os.remove('results/serverlog.txt')
-    os.remove('results/wgettime0')
-    os.remove('results/wgettime1')
-    os.remove('results/wgettime2')
 
 if __name__ == '__main__':
     main()
