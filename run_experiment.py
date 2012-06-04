@@ -24,7 +24,7 @@ import os
 import re
 from util.monitor import monitor_devs_ng
 
-RESULTS_DIR = 'results/mininet_yours/'
+RESULTS_DIR = 'results/mininet/'
 
 parser = argparse.ArgumentParser(description="Baseline tests")
 
