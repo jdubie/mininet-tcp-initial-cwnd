@@ -9,7 +9,7 @@ Nandita Dukkipati examines the speed to run a Google Web search (download a
 file ~15kB from Googles server) while the remote host varies its initial
 congestion window.
 
-Spin up our EC2 image in the AWS management console web application. AMI: "`ami-0a339263`"
+Spin up our EC2 image in the AWS management console web application. AMI: `ami-0a339263`
 
 Ssh into that server (replace domain name with your instance's domain name)
 
