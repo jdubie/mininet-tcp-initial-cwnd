@@ -1,2 +1,4 @@
-results/mininet_yours/
+results/mininet_yours/latencies.pdf
+results/mininet_yours/latencies.dat
+results/mininet_yours/latencies.eps
 *.pyc
