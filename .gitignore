@@ -1,12 +1,2 @@
-cs244-critiques
-cs244-readings
-*.swp
-*/*.swp
-*/*/*.swp
-mininet
-*/results
-final/util/*.pyc
-final/*.aux
-final/*.log
-final/cs244-12-pl
-final/tests
+results/mininet_yours/
+*.pyc

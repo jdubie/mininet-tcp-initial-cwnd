@@ -2,17 +2,6 @@
 
 "CS244 Assignment 3: Baseline for experiments"
 
-# Dependencies ------>>>>>
-# install termcolor ( google python termcolor, go from there... )
-#     wget http://pypi.python.org/packages/source/t/termcolor/termcolor-1.1.0.tar.gz#md5=043e89644f8909d462fbbfa511c768df
-# apt-get install ethstats
-# sudo cp SimpleVarLengthHTTPServer.py /usr/lib/python2.7/
-
-# TODO -------
-# figure out python grapher - might be prudent to have it output to file too, ala p1 and p2?
-# recreate the bar plot
-# READ over RCP and email nandita
-
 from mininet.topo import Topo
 from mininet.net import Mininet
 from mininet.log import lg, output
@@ -35,6 +24,8 @@ import os
 import re
 from util.monitor import monitor_devs_ng
 
+RESULTS_DIR = 'results/mininet_yours/'
+
 parser = argparse.ArgumentParser(description="Baseline tests")
 
 parser.add_argument('--dir', '-d',
@@ -43,7 +34,8 @@ parser.add_argument('--dir', '-d',
 
 parser.add_argument('--target', '-g',
                     help="Thing to get",
-                    default="payloads/google_search.html")
+		    default=29)
+                    #default="payloads/google_search.html")
 
 parser.add_argument('--bw_net', '-b',
                     type = float,
@@ -356,7 +348,7 @@ def save_graph(cwnds,latencies):
     to_file = ''
     for i in range(0,len(cwnds)):
       to_file += '{0:2d} {1:3d}\n'.format(cwnds[i],latencies[i])
-    f = open('latencies.dat', 'w')
+    f = open(RESULTS_DIR + 'latencies.dat', 'w')
     f.write(to_file)
     f.close()
 
@@ -367,9 +359,9 @@ def save_graph(cwnds,latencies):
     myaxis = pyx.graph.axis.bar(painter=mypainter)
 
     g = pyx.graph.graphxy(width=8, x=myaxis)
-    g.plot(pyx.graph.data.file("latencies.dat", xname=1, y=2), [pyx.graph.style.bar()])
-    g.writeEPSfile("latencies")
-    g.writePDFfile("latencies")
+    g.plot(pyx.graph.data.file(RESULTS_DIR + 'latencies.dat', xname=1, y=2), [pyx.graph.style.bar()])
+    g.writeEPSfile(RESULTS_DIR + 'latencies')
+    g.writePDFfile(RESULTS_DIR + 'latencies')
 
 
 def main():
@@ -415,6 +407,12 @@ def main():
     net.stop()
     end = time()
     cprint("Experiment took %.3f seconds" % (end - start), "yellow")
+
+    # clean up temp files
+    os.remove('results/serverlog.txt')
+    os.remove('results/wgettime0')
+    os.remove('results/wgettime1')
+    os.remove('results/wgettime2')
 
 if __name__ == '__main__':
     main()
