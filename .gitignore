@@ -2,3 +2,5 @@ results/mininet/latencies.pdf
 results/mininet/latencies.dat
 results/mininet/latencies.eps
 *.pyc
+*.swp
+lib/*.swp
