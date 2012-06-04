@@ -332,8 +332,8 @@ def run_simple_exp(net, num_runs):
 
         avg_time = sum(times)/len(times)
         latency = int(avg_time * 1000)
-        print times, " -- avg time -- ", avg_time
-        print " -- latency -- ", latency
+        print times, " -- avg time -- ", avg_time, "ms"
+        print " -- latency -- ", latency, "ms"
         cwnd_times.append(avg_time)
         latencies.append(latency)
 
@@ -346,11 +346,20 @@ def save_graph(cwnds,latencies):
     
     # write .dat file
     to_file = ''
+    cprint('*****************', 'cyan')
+    cprint('**** RESULTS ****', 'cyan')
+    cprint('*****************', 'cyan')
+    cprint('CWND  LATENCY', 'cyan')
     for i in range(0,len(cwnds)):
-      to_file += '{0:2d} {1:3d}\n'.format(cwnds[i],latencies[i])
+      line = '{0:4d}  {1:3d}'.format(cwnds[i],latencies[i])
+      cprint(line, 'cyan')
+      to_file += line + '\n'
     f = open(RESULTS_DIR + 'latencies.dat', 'w')
     f.write(to_file)
     f.close()
+    cprint ('*****************', 'cyan')
+    cprint ('** END RESULTS **', 'cyan')
+    cprint ('*****************', 'cyan')
 
     # create graph
     mypainter = pyx.graph.axis.painter.bar(nameattrs=[pyx.trafo.rotate(45),
