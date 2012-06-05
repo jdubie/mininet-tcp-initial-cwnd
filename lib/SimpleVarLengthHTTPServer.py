@@ -1,5 +1,5 @@
 """
-Simple Random HTTP Server.
+Simple Var length HTTP Server.
 
 This module is taken from the standard python 2.7 library and it
 builds on BaseHTTPServer by implementing the standard GET
@@ -90,8 +90,8 @@ class SimpleHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             
             # TODO - chunkify?
             i = 0
+            tosend = string.zfill('endofpacket\n', mss)
             while i < size:
-                tosend = string.zfill('endofpacket\n', mss)
                 self.wfile.write(tosend)
                 i = i+1
 

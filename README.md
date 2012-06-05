@@ -9,6 +9,14 @@ Nandita Dukkipati examines the speed to run a Google Web search (download a
 file ~15kB from Googles server) while the remote host varies its initial
 congestion window.
 
+### Instructions to reproduce our experiement:
+
+Spin up our EC2 image in the AWS management console web application. AMI: `ami-0a339263`
+
+ssh into that server (replace domain name with your instance's domain name)
+
+    ssh -l ubuntu ec2-xxx-xxx-xxx-xxxx.compute-1.amazonaws.com
+
 Clone our repo
 
     git clone https://github.com/jdubie/mininet-tcp-initial-cwnd.git
@@ -22,5 +30,5 @@ Finally run the experiment
 
     sudo ./run_experiment.py
 
-To see the results open `results/mininet_yours/latencies.txt` or scp
-`results/mininet_yours/latencies.pdf` to your local computer.
+* Results will be printed to stdout and in `results/mininet_yours/latencies.txt`
+* scp `results/mininet_yours/latencies.pdf` to your local computer for a bar graph.
