@@ -55,6 +55,10 @@ parser.add_argument('--numruns', '-n',
                     type=int,
                     default=3)
 
+parser.add_argument('--loss', '-s',
+                    type=float,
+                    default=0.0)
+
 parser.add_argument('--time', '-t',
                     dest="time",
                     type=int,
@@ -95,7 +99,7 @@ class SimpleTopo(Topo):
     # and latency are identical to the averages of
     # the 'avgDC' used in googles paper
 
-    def __init__(self, cpu=.5, bw=args.bw_net, delay=args.latency,
+    def __init__(self, cpu=.5, bw=args.bw_net, delay=args.latency, loss=args.loss,
                  max_queue_size=None, **params):
         """client server topology with one receiver
            and 1 client.
@@ -109,7 +113,7 @@ class SimpleTopo(Topo):
 
         # Host and link configuration
         client_lconfig = {'bw': bw, 'delay': delay,
-                   'max_queue_size': max_queue_size }
+                'max_queue_size': max_queue_size, 'loss': loss }
 
         # Create the actual topology
         client = self.add_host('client')
@@ -337,6 +341,7 @@ def run_simple_exp(net, num_runs):
 
         avg_time = sum(times)/len(times)
         latency = int(avg_time * 1000)
+        print times
 
         cwnd_times.append(avg_time)
         latencies.append(latency)
@@ -497,12 +502,13 @@ def figure5(graph_num):
         x_units = 'Bandwidth (kbps)'
         y_units = 'Improvement (ms)'
         #variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
-        variables = [3000, 5000, 10000]
+        variables = [56, 256]
     elif graph_num == 3:
         x_units = 'BDP (bytes)'
         y_units = 'Improvement (ms)'
         # tuples are (B/W (Kbps), RTT/2 (ms))
-        variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
+        #variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
+        variables = [(50, 50), (100, 50), (250, 100), (250, 200)]
     elif graph_num == 4:
         variables = [1] #dummy var
 
@@ -558,12 +564,18 @@ def figure5(graph_num):
     # fixup the bdp x-axis before we graph if we are testing bdp
     if graph_num == 3:
         variables = [1000, 5000, 10000, 50000, 100000]
+    if graph_num == 1: #fixup latency to be RTT, not RTT/2
+        variables = [20, 50, 100, 200, 500, 1000, 3000]
 
     save_graph(variables, abs_improvs, pct_improvs, title, x_units, y_units,filename)
 
 def figure7():
     #rather not copy/paste code
     figure5(4)
+
+def figure5_bandwidth_adjusted():
+    #TODO
+    figure5(5)
 
 def main():
     # comment in the figures from the initcwnd paper you want to reproduce
