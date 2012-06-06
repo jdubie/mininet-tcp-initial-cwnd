@@ -439,12 +439,19 @@ def save_graph(bw_vals, abs_improv, pct_improv,title, x_units, y_units,filename)
     
     max1 = max([100,max(abs_improv)])
     #max2 = max([100,max(pct_improv)])
+    max2_pre = max(pct_improv)
+    print "max2_pre: ", max2_pre
     max2 = 50
+    def expod(x): return 2 ** x
     def adjust(x):
       if max1 == 0:
         return 0
-      return int(x * max1 / max2)
+      return int(x * max2_pre / max2_exp)
+    pct_improv = map(expod,pct_improv)
+    max2_exp = max(pct_improv)
+    print "max2_exp: ", max2_exp
     pct_improv = map(adjust,pct_improv)
+    print "after final map: ", pct_improv
 
     to_file = ''
     for i in range(0,len(bw_vals)):
@@ -458,11 +465,11 @@ def save_graph(bw_vals, abs_improv, pct_improv,title, x_units, y_units,filename)
     # create graph
     g = pyx.graph.graphxy(width=12,
           x=pyx.graph.axis.nestedbar(title=x_units),
-          y=pyx.graph.axis.lin(min=0,max=max1,title=y_units),
+          y=pyx.graph.axis.log(min=1,max=max1,title=y_units),
           y2=pyx.graph.axis.lin(min=0,max=max2,title='Percentage'))
 
     g.plot([pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 0", y=2),
-            pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 1", y=3)],
+            pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 1", y2=3)],
         [pyx.graph.style.bar()])
     g.text(g.width/2, g.height + 0.2, title, 
                [pyx.text.halign.center, pyx.text.valign.bottom, pyx.text.size.Large])
@@ -489,8 +496,8 @@ def figure5(graph_num):
     elif graph_num == 2:
         x_units = 'Bandwidth (kbps)'
         y_units = 'Improvement (ms)'
-        variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
-        #variables = [10000]
+        #variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+        variables = [3000, 5000, 10000]
     elif graph_num == 3:
         x_units = 'BDP (bytes)'
         y_units = 'Improvement (ms)'
@@ -562,16 +569,16 @@ def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    figure5(1)
+    #figure5(1)
 
     #recreate bandwidth vs fct improvement graph
     figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
-    figure5(3)
+    #figure5(3)
 
     #recreate figure 7
-    figure7()
+    #figure7()
 
 if __name__ == '__main__':
     main()
