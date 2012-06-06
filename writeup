@@ -16,17 +16,17 @@ TODO: [3] Blog post on changing initcwnd
 
 Introduction:
 
-TCP flow completion time has recently become an active area of research, as networks have increased significantly in capacity but typical users of the web haven't seen a corresponding increase in performance. The majority of internet users judge performance primarily on TCP flow completion time (i.e., how long it takes for web pages to load), making it a very important metric for judging the quality of service provided by the internet. Also, the majority of traffic that internet users produce consists of small and short lived TCP flows; the average TCP flow size is around 386kb as of 2010 [2]. Due to their small size, a significant portion of flows never leave the slow start stage and thus never reach their full capacity sending rates. This unneccesarily prolongs the lifetime of the TCP flows, decreasing the quality of service perceived by typical users browsing the internet. 
+TCP flow completion time has recently become an active area of research, as networks have increased significantly in capacity but typical users of the web haven't seen a corresponding increase in performance. The majority of users judge performance primarily on TCP flow completion time (i.e., how long it takes for web pages to load), making it a very important metric for judging the quality of service provided by the internet. Also, the majority of traffic that internet users produce consists of small and short lived TCP flows; the average TCP flow size is around 386kb as of 2010 [2]. Due to their small size, a significant portion of flows never leave the slow start stage and thus never reach their full capacity sending rates. This unneccesarily prolongs the lifetime of the TCP flows, decreasing the quality of service perceived by typical users browsing the internet. 
 
 In our project, we reproduce results from a paper entitled "An Argument for Increasing TCP's Initial Congestion Window" that addresses this problem [1]. The main idea of the paper is very simple: increasing the initial rate at which hosts send data should improve the average completion time of TCP flows on the Web. Because most flows are short lived, increasing the initial congestion window should eliminate a large fraction of the round trips that short-lived flows require to complete. The paper proposes increasing the initial congestion (initcwnd) from the (previous) Linux default of 3 segments (~4KB) to 10 segments (~15KB), and presents experimental data gathered at frontend Google data centers to support this proposed improvement.
 
-The figure from the paper that we attempt to replicate is shown below in Figure X. In this figure, they plot the average improvement in flow completion time from increasing the initcwnd from 3 to 10 segments as a function of various aspects of clients' connections. The top chart presents average improvement bucketed by clients' round rrip times (RTTs), the middle bucketed by clients' bandwidth, and the bottom bucketed by clients' bandwidth-delay product (BDP). Reproducing this figure will help us gain insight into what type of connections benefit from this change the most.
+The figure from the paper that we attempt to replicate is shown below in Figure X. In this figure, they plot the average improvement in flow completion time from increasing the initcwnd from 3 to 10 segments as a function of various aspects of clients' connections. The top chart presents average improvement bucketed by clients' round trip times (RTTs), the middle bucketed by clients' bandwidth, and the bottom bucketed by clients' bandwidth-delay product (BDP). Reproducing this figure will help us gain insight into what type of connections benefit from this change the most.
 
 Methods:
 
-We used Mininet to construct a very simple network of a client and server node connected by a single switch (see Figure 1 below?). We control the parameters of the network (RTT, bandwidth, etc.) by modifying the parameters of the link connecting the client to the middle switch. Unless otherwise stated, we use the average RTT and bandwidth that the paper found clients of a Google datacenter to have (70ms and 1.2Mbps, respectively). 
+We used Mininet to construct a very simple network of a client and server node connected by a single switch (see Figure 1 below?). We control the parameters of the network (RTT, bandwidth, etc.) by modifying the parameters of the link connecting the client to the middle switch. Unless otherwise stated, we use the average RTT and bandwidth of Google datacenter clients found in the paper (70ms and 1.2Mbps, respectively) [1]. 
 
-To emulate a front-end Google datacenter on the server node, we use a modified version of the python "SimpleHTTPServer" that serves static content over HTTP. We made a simple modification to it to enable it to generate and send arbitrary length files on the fly. We use the 'ip route' tool to change the initial congestion window that the server uses, as described in [3]. On the client's side, we use the unix utility 'wget' to download files from the server, and 'time' to determine how long it took.
+On the server node, we emulate a front-end Google server using a modified version of the python "SimpleHTTPServer" class that serves static content over HTTP. We made a simple modification to enable it to generate and send arbitrary length files on the fly. We use the 'ip route' tool to change the initial congestion window that the server uses, as described in [3]. On the client's side, we use the unix utility 'wget' to download files from the server, and 'time' to determine how long it took.
 
 Unfortunately, modifying the server's initial congestion window via ip route doesn't work on any recent stock Ubuntu kernel. We believe this functionality was broken sometime around Linux v2.6.39. Fortunately, more recent Linux kernels (v3.3 and higher) have fixed this issue. We decided to use Linux v3.3, because it is compatible with the most recent version of Open vSwitch (a dependency of Mininet). In order to install Open vSwitch, we also had to apply a minor patch to Mininet to inject the right dependencies.
 
@@ -34,14 +34,45 @@ Our methodology when running experiments is as follows. We first set up a networ
 
 Validation
 
-Upon starting a new Mininet network, we verify the RTT using ping and the bandwidth by using ethstats to measure the rate at which iperf blasts packets. Validating the server's initial congestion window turned out to be a much harder task. We employ a combination of heuristics and tcpdump to verify that ip route is behaving correctly. First, we can easily tell if it is actually working by measuring the amount of time it takes a flow to complete in a high RTT network under different initial congestion windows. If a small flow takes at least one RTT longer to complete with a low initcwnd than with an extremely high initcwnd, then the initcwnd must be changed. Following this approach, we replicated figure 2 from [1] as a sanity check to make sure that this was working.
+Upon starting a new Mininet network, we verify the RTT using ping and we verify the bandwidth by using ethstats and iperf. Validating the server's initial congestion window turned out to be a much harder task. We employ a combination of heuristics and tcpdump to verify that ip route is behaving correctly. First, we can easily tell if ip route is actually working by measuring the amount of time it takes a flow to complete in a high RTT network under different initial congestion windows. If a small flow takes at least one RTT longer to complete with a low initcwnd than with an extremely high initcwnd, then the initcwnd must have actually been changed. Following this approach, we replicated figure 2 from [1] as a sanity check to make sure that this consistently works.
 
 <figure 2>
 
-To further verify that ip route was working, we ran a simple experiment in a high RTT high bandwidth network and viewed the packets in wireshark. This allowed us to see without ambiguity what the server's initcwnd was and compare it to the initcwnd we set. For
+To further verify that ip route was working, we inspected the actual packets sent in experiments using tcpdump and wireshark. This allowed us to see without ambiguity what the server's initcwnd was and verify it was the initcwnd we set. For all trials, we verified that the initcwnd was set correctly. We would've liked to automate this process, but unfortunately we couldn't find a way. Using the 'tcp_probe' module often produced inconsistent results from what we saw in wireshark, and most of the time it didn't detect short flows. While it was tedious, we were able to verify the initcwnd in our final results with wireshark.
+
+Results:
+
+The results (shown below) are similar to the results presented in the initcwnd paper, with the notable exception of the bandwidth vs improved flow completion time (FCT).
+
+<present ours and papers, side by side>
+
+Explain RTT graph - everything works out as expected.
+
+Explain b/w graph - in the paper, clients with low b/w aren't iid w/ respect to latency, ours are
+
+Explain BDP - use correlations in the paper, show how it works out
+
+Lessons learned:
+
+Perhaps our largest takeaway from this project is an increased ability to debug problems down to the kernel. We spent the vast majority of our time trying to figure out why setting the initial congestion window via ip route wasn't working. We tried everything we could before diving into the kernel, and even then we only managed to fix the issue by a stroke of luck. It was extremely fortuitious that setting the initcwnd via ip route was fixed in Linux v3.3. If this hadn't been the case, it is unclear whether we would have had the necessary time to create a patch for the kernel. Installing Mininet with the new kernel also turned out to be unexpectedly hard, but it didn't require nearly as much effort or time to fix.
+
+This project taught us the important lesson to not under-estimate the difficulty of research and the difficulty of getting experiments to work. At the beginning of the project, we set our sights on reproducing research from two papers: the initial cwd paper and a paper on 'RCP', a new transport protocol similar to TCP [4]. Implementing RCP would've required significant modifications to both the host's networking stack and the switch's stack as well. In retrospect, this seems like a near-impossible goal for a four-week research project. If we hadn't run into the problem of setting the initcwnd, we would've had 3 weeks to do this, as we had the majority of our code in place to reproduce results from the initcwnd paper by the first week. Even if this was the case, we still likely wouldn't have had the time to implement RCP. Considering the unexpected problems we ran into, RCP surely would have posed more unpredictable difficulties. Generally, undertaking a research project without a tested and proven way of setting parameters and conducting experiments *always* takes longer than expected. Its purely a matter of chance whether things work as planned or not; unfortunately we were stuck with the latter case. Next time, we will have the wisdom to make a more realistic estimate of what we can accomplish in a certain amount of time.
 
 
 
+
+
+
+
+
+
+
+
+
+
+##### TODO - get latency verify working
+      - try tcp_probe one last time
+      - verify that ip route actually works using wireshark on ami
 
 - mininet, default values used.
 - modified version of python simplehttpserver + wget
