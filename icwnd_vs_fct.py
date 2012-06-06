@@ -24,8 +24,6 @@ import os
 import re
 from util.monitor import monitor_devs_ng
 
-RESULTS_DIR = 'results/mininet/'
-
 parser = argparse.ArgumentParser(description="Baseline tests")
 
 parser.add_argument('--dir', '-d',
@@ -60,6 +58,20 @@ parser.add_argument('--time', '-t',
                     help="Duration of the experiment.",
                     default=60)
 
+
+# Expt parameters
+args = parser.parse_args()
+
+if not os.path.exists(args.dir):
+    os.makedirs(args.dir)
+
+RESULTS_DIR = args.dir + '/mininet/'
+
+if not os.path.exists(RESULTS_DIR):
+    os.makedirs(RESULTS_DIR)
+
+lg.setLogLevel('info')
+
 ### print in pretty colors
 def cprint(s, color, cr=True):
     """Print in color
@@ -69,15 +81,6 @@ def cprint(s, color, cr=True):
         print T.colored(s, color)
     else:
         print T.colored(s, color),
-
-
-# Expt parameters
-args = parser.parse_args()
-
-if not os.path.exists(args.dir):
-    os.makedirs(args.dir)
-
-lg.setLogLevel('info')
 
 # Topology to be instantiated in Mininet
 class SimpleTopo(Topo):
