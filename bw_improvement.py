@@ -497,7 +497,7 @@ def figure5(graph_num):
     if graph_num == 1:
         x_units = 'RTT (ms)'
         y_units = 'Improvement (ms)'
-        variables = [10, 25, 50, 100, 250, 500, 1500]
+        variables = [20, 50, 100, 200, 500, 1000, 3000]
     elif graph_num == 2:
         x_units = 'Bandwidth (kbps)'
         y_units = 'Improvement (ms)'
@@ -516,7 +516,7 @@ def figure5(graph_num):
 
         if graph_num == 1:
             cprint("Testing network with latency of %s" % var, "blue")
-            topo = SimpleTopo(delay='%dms' % var)
+            topo = SimpleTopo(delay='%dms' % (var/2))
         elif graph_num == 2:
             cprint("Testing network with bottleneck bandwidth of %f kbps" % var, "blue")
             topo = SimpleTopo(bw = var/1000.0)
@@ -564,8 +564,6 @@ def figure5(graph_num):
     # fixup the bdp x-axis before we graph if we are testing bdp
     if graph_num == 3:
         variables = [1000, 5000, 10000, 50000, 100000]
-    if graph_num == 1: #fixup latency to be RTT, not RTT/2
-        variables = [20, 50, 100, 200, 500, 1000, 3000]
 
     save_graph(variables, abs_improvs, pct_improvs, title, x_units, y_units,filename)
 
@@ -581,10 +579,10 @@ def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    #figure5(1)
+    figure5(1)
 
     #recreate bandwidth vs fct improvement graph
-    figure5(2)
+    #figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
     #figure5(3)
