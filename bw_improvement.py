@@ -385,9 +385,8 @@ def save_graph(bw_vals, abs_improv, pct_improv):
 #   g.writeEPSfile(RESULTS_DIR + 'latencies')
 #   g.writePDFfile(RESULTS_DIR + 'latencies')
 
-
-def main():
-    "Create and run experiment"
+def figure6():
+    "Create and run bandwidth experiment"
     start = time()
 
     abs_improvs = []
@@ -431,6 +430,58 @@ def main():
     cprint("Experiment took %.3f seconds" % (end - start), "yellow")
 
     save_graph(bw_vals, abs_improvs, pct_improvs)
+
+def figure5():
+    "Create and run bandwidth experiment"
+    start = time()
+
+    abs_improvs = []
+    pct_improvs = []
+    latency_vals = ['10ms', '25ms', '50ms', '100ms', '250ms', '500ms', '1500ms']
+
+    for lat in latency_vals:
+
+        cprint("Testing network with latency of %s" % lat, "blue")
+        topo = SimpleTopo(delay=lat)
+
+        # create very simple mininet
+        net = Mininet(topo=topo, link=TCLink)
+        net.start()
+
+        # increase clients rwnd before anything else
+        increase_client_rwnd(net)
+
+        # test stuff before starting
+        cprint("*** Dumping network connections:", "green")
+        dumpNetConnections(net)
+
+        cprint("*** Testing connectivity", "blue")
+        net.pingAll()
+
+        # start server
+        start_server(net)
+
+        # run experiement
+        (abs_i, pct_i) = run_simple_exp(net, args.numruns)
+
+        # end this instance of mininet
+        net.stop()
+
+        abs_improvs.append(abs_i)
+        pct_improvs.append(pct_i)
+
+    end = time()
+    cprint("Experiment took %.3f seconds" % (end - start), "yellow")
+
+    # TODO - dubie, make a grapher function for this/generalize this one for figs 5, 6, and 7?
+    save_graph(latency_vals, abs_improvs, pct_improvs)
+
+
+def main():
+    # comment in the figures from the initcwnd paper you want to reproduce
+
+    figure5()
+    #figure6()
 
 if __name__ == '__main__':
     main()
