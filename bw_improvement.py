@@ -24,7 +24,6 @@ import os
 import re
 from util.monitor import monitor_devs_ng
 
-RESULTS_DIR = 'results/mininet/'
 
 parser = argparse.ArgumentParser(description="Baseline tests")
 
@@ -34,7 +33,7 @@ parser.add_argument('--dir', '-d',
 
 parser.add_argument('--target', '-g',
                     help="Thing to get",
-                    default=27)
+                    default=29)
                     #default="payloads/google_search.html")
 
 parser.add_argument('--bw_net', '-b',
@@ -60,6 +59,21 @@ parser.add_argument('--time', '-t',
                     help="Duration of the experiment.",
                     default=60)
 
+
+# Expt parameters, setup stuff
+args = parser.parse_args()
+
+if not os.path.exists(args.dir):
+    os.makedirs(args.dir)
+
+RESULTS_DIR =  args.dir + '/mininet/'
+
+if not os.path.exists(RESULTS_DIR):
+    os.makedirs(RESULTS_DIR)
+
+lg.setLogLevel('info')
+
+
 ### print in pretty colors
 def cprint(s, color, cr=True):
     """Print in color
@@ -70,14 +84,6 @@ def cprint(s, color, cr=True):
     else:
         print T.colored(s, color),
 
-
-# Expt parameters
-args = parser.parse_args()
-
-if not os.path.exists(args.dir):
-    os.makedirs(args.dir)
-
-lg.setLogLevel('info')
 
 # Topology to be instantiated in Mininet
 class SimpleTopo(Topo):
@@ -90,7 +96,7 @@ class SimpleTopo(Topo):
     def __init__(self, cpu=.5, bw=args.bw_net, delay=args.latency,
                  max_queue_size=None, **params):
         """client server topology with one receiver
-           and 1 clients.
+           and 1 client.
            cpu: system fraction for each host
            bw: link bandwidth in Mb/s
            delay: link delay (e.g. 10ms)
@@ -290,16 +296,13 @@ def run_simple_exp(net, num_runs):
     cli_route = client.cmd("ip route")
     serv_route = serv_route.replace('\n', ' ')
     cli_route = cli_route.replace('\n', ' ')
-    print serv_route
-    print cli_route
 
     # have the client get the server's web page
     cprint("starting the client's requests", "green")
 
     cwnd_times = []
     latencies = []
-    cwnds = [3, 6, 10, 16, 26, 42]
-    #cwnds = [1, 20]
+    cwnds = [3, 10]
 
     for cwnd in cwnds:
 
@@ -332,91 +335,102 @@ def run_simple_exp(net, num_runs):
 
         avg_time = sum(times)/len(times)
         latency = int(avg_time * 1000)
-        print times, " -- avg time -- ", avg_time, "ms"
-        print " -- latency -- ", latency, "ms"
+
         cwnd_times.append(avg_time)
         latencies.append(latency)
 
-    #print cwnd_times
-    save_graph(cwnds,latencies)
-    
-def save_graph(cwnds,latencies):
+    absolute_improve = latencies[0] - latencies[1]
+    percent_improve = 100*( cwnd_times[0]/cwnd_times[1] - 1 )
+    print "absolute improvement", absolute_improve, "percentage improvement", percent_improve
 
-    assert(len(cwnds) == len(latencies))
+    return (absolute_improve, percent_improve)
+
     
-    # write .dat file
+def save_graph(bw_vals, abs_improv, pct_improv):
+
+    assert(len(bw_vals) == len(abs_improv))
+    assert(len(bw_vals) == len(pct_improv))
+    print abs_improv
+    print pct_improv
+    
+    # print stuff out 
     to_file = ''
     cprint('*****************', 'cyan')
     cprint('**** RESULTS ****', 'cyan')
     cprint('*****************', 'cyan')
-    cprint('CWND  LATENCY', 'cyan')
-    for i in range(0,len(cwnds)):
-      line = '{0:4d}  {1:3d}'.format(cwnds[i],latencies[i])
-      cprint(line, 'cyan')
-      to_file += line + '\n'
-    f = open(RESULTS_DIR + 'latencies.dat', 'w')
-    f.write(to_file)
-    f.close()
+    cprint('BW  ABS IMP  PCT IMP', 'cyan')
+    for i in range(0,len(bw_vals)):
+        #line = '{0:4d}  {1:3d}   {1:3f}'.format(bw_vals[i], abs_improv[i], pct_improv[i])
+        # TODO - dubie, make nicer formatting and graphs
+        line = "%d   %d   %f" % (bw_vals[i], abs_improv[i], pct_improv[i])
+        cprint(line, 'cyan')
+        to_file += line + '\n'
     cprint ('*****************', 'cyan')
     cprint ('** END RESULTS **', 'cyan')
     cprint ('*****************', 'cyan')
 
-    # create graph
-    mypainter = pyx.graph.axis.painter.bar(nameattrs=[pyx.trafo.rotate(45),
-                                                  pyx.text.halign.right],
-                                       innerticklength=0.1)
-    myaxis = pyx.graph.axis.bar(painter=mypainter)
+    # write out results to file
+    f = open(RESULTS_DIR + 'latencies.dat', 'w')
+    f.write(to_file)
+    f.close()
 
-    g = pyx.graph.graphxy(width=8, x=myaxis)
-    g.plot(pyx.graph.data.file(RESULTS_DIR + 'latencies.dat', xname=1, y=2), [pyx.graph.style.bar()])
-    g.writeEPSfile(RESULTS_DIR + 'latencies')
-    g.writePDFfile(RESULTS_DIR + 'latencies')
+    # create graph
+#   mypainter = pyx.graph.axis.painter.bar(nameattrs=[pyx.trafo.rotate(45),
+#                                                 pyx.text.halign.right],
+#                                      innerticklength=0.1)
+#   myaxis = pyx.graph.axis.bar(painter=mypainter)
+
+#   g = pyx.graph.graphxy(width=8, x=myaxis)
+#   g.plot(pyx.graph.data.file(RESULTS_DIR + 'latencies.dat', xname=1, y=2), [pyx.graph.style.bar()])
+#   g.writeEPSfile(RESULTS_DIR + 'latencies')
+#   g.writePDFfile(RESULTS_DIR + 'latencies')
 
 
 def main():
     "Create and run experiment"
     start = time()
 
-    topo = SimpleTopo()
+    abs_improvs = []
+    pct_improvs = []
+    #bw_vals = [256, 512, 1000, 2000, 3000, 5000, 10000]
+    bw_vals = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
 
-    # create very simple mininet
-    net = Mininet(topo=topo, link=TCLink)
+    for bw in bw_vals:
 
-    net.start()
+        cprint("Testing network with bottleneck bandwidth of %f kbps" % bw, "blue")
+        topo = SimpleTopo(bw = bw/1000.0)
 
-    # increase clients rwnd before anything else
-    increase_client_rwnd(net)
-    
-    # test stuff before starting
-    cprint("*** Dumping network connections:", "green")
-    dumpNetConnections(net)
+        # create very simple mininet
+        net = Mininet(topo=topo, link=TCLink)
 
-    cprint("*** Testing connectivity", "blue")
-    net.pingAll()
+        net.start()
 
-    #verify_bandwidth(net)
-    #verify_latency(net) # TODO - whats wrong with this?
+        # increase clients rwnd before anything else
+        increase_client_rwnd(net)
 
-    if args.cli:
-        # Run CLI instead of experiment
-        CLI(net)
+        # test stuff before starting
+        cprint("*** Dumping network connections:", "green")
+        dumpNetConnections(net)
 
-    # start server
-    start_server(net)
+        cprint("*** Testing connectivity", "blue")
+        net.pingAll()
 
-    #run simple experiment
-    run_simple_exp(net, args.numruns)
+        # start server
+        start_server(net)
 
-    # client before and after to track changes
-    if args.cli:
-        # Run CLI instead of experiment
-        CLI(net)
+        # run experiement
+        (abs_i, pct_i) = run_simple_exp(net, args.numruns)
 
-    # end the experiment, output stats
-    net.stop()
+        # end this instance of mininet
+        net.stop()
+
+        abs_improvs.append(abs_i)
+        pct_improvs.append(pct_i)
+
     end = time()
     cprint("Experiment took %.3f seconds" % (end - start), "yellow")
 
+    save_graph(bw_vals, abs_improvs, pct_improvs)
 
 if __name__ == '__main__':
     main()
