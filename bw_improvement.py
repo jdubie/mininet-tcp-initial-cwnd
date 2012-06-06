@@ -454,15 +454,23 @@ def figure5(graph_num):
         variables = ['10ms', '25ms', '50ms', '100ms', '250ms', '500ms', '1500ms']
     elif graph_num == 2:
         variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+    elif graph_num == 3:
+        # tuples are (B/W (Kbps), RTT/2 (ms))
+        variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
 
     for var in variables:
 
         if graph_num == 1:
             cprint("Testing network with latency of %s" % var, "blue")
             topo = SimpleTopo(delay=var)
-        if graph_num == 2:
+        elif graph_num == 2:
             cprint("Testing network with bottleneck bandwidth of %f kbps" % var, "blue")
             topo = SimpleTopo(bw = var/1000.0)
+        elif graph_num == 3:
+            cprint("Testing network with bottleneck bandwidth of %f kbps" % var[0], "blue")
+            cprint("and latency of %d ms" % var[1], "blue")
+            delay = "%dms" % var[1]
+            topo = SimpleTopo(bw = var[0]/1000.0, delay=delay)
 
         # create very simple mininet
         net = Mininet(topo=topo, link=TCLink)
@@ -493,6 +501,10 @@ def figure5(graph_num):
     end = time()
     cprint("Experiment took %.3f seconds" % (end - start), "yellow")
 
+    # fixup the bdp x-axis before we graph if we are testing bdp
+    if graph_num == 3:
+        variables = [1000, 5000, 10000, 50000, 100000]
+
     # TODO - dubie, make a grapher function for this/generalize this one for figs 5, 6, and 7?
     save_graph(variables, abs_improvs, pct_improvs)
 
@@ -501,10 +513,13 @@ def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    figure5(1)
+    #figure5(1)
 
     #recreate bandwidth vs fct improvement graph
-    figure5(2)
+    #figure5(2)
+
+    #recreate bandwidth delay product vs fct improvement graph
+    figure5(3)
 
 if __name__ == '__main__':
     main()
