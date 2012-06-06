@@ -1,0 +1,82 @@
+
+Project Name: Increasing TCP's Initial Congestion Window
+
+Team Members: Joseph Marrama (jmarrama@stanford.edu), Jack Dubie (jdubie@stanford.edu)
+
+Key Result: Increasing TCP's initial congestion window can significantly improve the completion times of typical TCP flows on the Web. We replicate many of the positive results from a paper on the subject using Mininet and a simple webserver.
+
+Sources:
+
+TODO: [1] <nanditas initial cwnd paper>
+
+[2] \small{S. Ramachandran, and A. Jain. Web page stats: size and number of resources.\\
+http://code.google.com/speed/articles/web-metrics.html, 2010 \\} 
+
+TODO: [3] Blog post on changing initcwnd
+
+Introduction:
+
+TCP flow completion time has recently become an active area of research, as networks have increased significantly in capacity but typical users of the web haven't seen a corresponding increase in performance. The majority of internet users judge performance primarily on TCP flow completion time (i.e., how long it takes for web pages to load), making it a very important metric for judging the quality of service provided by the internet. Also, the majority of traffic that internet users produce consists of small and short lived TCP flows; the average TCP flow size is around 386kb as of 2010 [2]. Due to their small size, a significant portion of flows never leave the slow start stage and thus never reach their full capacity sending rates. This unneccesarily prolongs the lifetime of the TCP flows, decreasing the quality of service perceived by typical users browsing the internet. 
+
+In our project, we reproduce results from a paper entitled "An Argument for Increasing TCP's Initial Congestion Window" that addresses this problem [1]. The main idea of the paper is very simple: increasing the initial rate at which hosts send data should improve the average completion time of TCP flows on the Web. Because most flows are short lived, increasing the initial congestion window should eliminate a large fraction of the round trips that short-lived flows require to complete. The paper proposes increasing the initial congestion (initcwnd) from the (previous) Linux default of 3 segments (~4KB) to 10 segments (~15KB), and presents experimental data gathered at frontend Google data centers to support this proposed improvement.
+
+The figure from the paper that we attempt to replicate is shown below in Figure X. In this figure, they plot the average improvement in flow completion time from increasing the initcwnd from 3 to 10 segments as a function of various aspects of clients' connections. The top chart presents average improvement bucketed by clients' round rrip times (RTTs), the middle bucketed by clients' bandwidth, and the bottom bucketed by clients' bandwidth-delay product (BDP). Reproducing this figure will help us gain insight into what type of connections benefit from this change the most.
+
+Methods:
+
+We used Mininet to construct a very simple network of a client and server node connected by a single switch (see Figure 1 below?). We control the parameters of the network (RTT, bandwidth, etc.) by modifying the parameters of the link connecting the client to the middle switch. Unless otherwise stated, we use the average RTT and bandwidth that the paper found clients of a Google datacenter to have (70ms and 1.2Mbps, respectively). 
+
+To emulate a front-end Google datacenter on the server node, we use a modified version of the python "SimpleHTTPServer" that serves static content over HTTP. We made a simple modification to it to enable it to generate and send arbitrary length files on the fly. We use the 'ip route' tool to change the initial congestion window that the server uses, as described in [3]. On the client's side, we use the unix utility 'wget' to download files from the server, and 'time' to determine how long it took.
+
+Unfortunately, modifying the server's initial congestion window via ip route doesn't work on any recent stock Ubuntu kernel. We believe this functionality was broken sometime around Linux v2.6.39. Fortunately, more recent Linux kernels (v3.3 and higher) have fixed this issue. We decided to use Linux v3.3, because it is compatible with the most recent version of Open vSwitch (a dependency of Mininet). In order to install Open vSwitch, we also had to apply a minor patch to Mininet to inject the right dependencies.
+
+Our methodology when running experiments is as follows. We first set up a network with the desired parameters and verify the RTT and bandwidth (described below). We then start the python server on the server node and increase the client's default receive window such that it can handle the server's maximum initial congestion window. Finally, we calculate the average amount of time it takes the client to download a fixed length file for different initial congestion windows. 
+
+Validation
+
+Upon starting a new Mininet network, we verify the RTT using ping and the bandwidth by using ethstats to measure the rate at which iperf blasts packets. Validating the server's initial congestion window turned out to be a much harder task. We employ a combination of heuristics and tcpdump to verify that ip route is behaving correctly. First, we can easily tell if it is actually working by measuring the amount of time it takes a flow to complete in a high RTT network under different initial congestion windows. If a small flow takes at least one RTT longer to complete with a low initcwnd than with an extremely high initcwnd, then the initcwnd must be changed. Following this approach, we replicated figure 2 from [1] as a sanity check to make sure that this was working.
+
+<figure 2>
+
+To further verify that ip route was working, we ran a simple experiment in a high RTT high bandwidth network and viewed the packets in wireshark. This allowed us to see without ambiguity what the server's initcwnd was and compare it to the initcwnd we set. For
+
+
+
+
+- mininet, default values used.
+- modified version of python simplehttpserver + wget
+- kernel modification 
+
+-validation
+  -verify b/w, latency (probably should get that working)
+  -verify ip route! 
+    -heuristic w/ time
+    -tcpdump/wireshark
+
+
+
+\section{Current Progress}
+
+At this point in our work, we have most of the code in place to replicate results from the initial \emph{cwnd} paper. However, we are temporarily blocked by the inability to change the initial congestion windows and receiver windows in mininet hosts. Once we squash this elusive bug, we will theoretically be able to replicate results from the paper. \\
+
+Implementing and testing RCP in Mininet may prove to be a slightly larger challenge. In order to implement it, we have to modify the switches in our network to continually calculate the share of the bandwidth $R(t)$ that each flow will receive. Furthermore, we have to modify the end host networking stack to include a layer 3.5 'shim', which will contain the rate fields that TCP will base its window size on [2]. Unfortunately, the only implementations of this that exist are designed for the $ns2$ network simulator. We're in contact with the primary author of the paper, Nandita Dukkipati, who can hopefully guide us through implementing RCP in Mininet.
+
+\section{References}
+
+[2] \small{RCP Frequently Asked Questions: Implementation. \\
+http://yuba.stanford.edu/rcp/faq.html\#implementation \\}
+
+
+In our project, we plan to compare two proposed improvements to TCP designed to help alleviate this problem: increasing the initial congestion window, and implementing 'rate control protocol' (RCP). 
+The first solution, increasing the \emph{init cwnd}, simply proposes to increase the starting window size of TCP connections. 
+The second solution, RCP, proposes additions to the host networking stack and network switches which provide hosts a reliable way to set their window size such that every flow gets a maximal even share of the network. \\
+
+The rest of our paper will proceed as follows. 
+First, we will describe the initial congestion window paper in depth and reproduce relevant results from it. 
+Then, we will examine the paper on RCP in depth and reproduce its main results as well.
+We will conclude with a comparison of the two methods and their performance. \\
+
+
+
+
+The majority of the TCP flows on the internet are small and short lived; the average flow size is 386kb [1].
