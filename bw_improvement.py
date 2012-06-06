@@ -345,6 +345,64 @@ def run_simple_exp(net, num_runs):
 
     return (absolute_improve, percent_improve)
 
+def figure7(net, num_runs):
+    "Run experiment"
+
+    seconds = args.time
+
+    # Get server and client
+    server = net.getNodeByName('server')
+    client = net.getNodeByName('client')
+    server.cmd("clear")
+    client.cmd("clear")
+    serv_ip = server.IP()
+    cli_ip = client.IP()
+    serv_route = server.cmd("ip route")
+    cli_route = client.cmd("ip route")
+    serv_route = serv_route.replace('\n', ' ')
+    cli_route = cli_route.replace('\n', ' ')
+
+    # have the client get the server's web page
+    cprint("starting the client's requests", "green")
+
+    cwnd_wget_times = []
+    cwnds = [3, 10]
+
+    for cwnd in cwnds:
+
+        #change congestion windows
+        sleep(0.5)
+        print "testing for cwnd of size %d ...." % cwnd
+
+        server.cmd("clear")
+        serv_res = server.cmd("ip route change %s initcwnd %d cwnd %d" % (serv_route, cwnd, cwnd))
+        #print "server results from ip route change ..... ", serv_res
+        server.cmd("ip route flush cache")
+
+        # change up filesize to get
+        wget_times = []
+        filesizes = [3, 4, 7, 10, 15, 30, 50]
+        for filesize in filesizes:
+
+            # test wget times
+            times = []
+            for r in range(num_runs):
+                cprint("%d ..." % (r + 1), "green")
+
+                times.append( query_server(client, serv_ip, r) )
+
+                sleep(0.5) # TODO - why are we getting those spurious times? this works fine
+
+            avg_time = sum(times)/len(times)
+            wget_times.append(avg_time)
+
+        cwnd_wget_times.append(wget_times)
+
+    absolute_improve = latencies[0] - latencies[1]
+    percent_improve = 100*( cwnd_times[0]/cwnd_times[1] - 1 )
+    print "absolute improvement", absolute_improve, "percentage improvement", percent_improve
+
+ 
     
 def save_graph(bw_vals, abs_improv, pct_improv):
 
@@ -385,64 +443,26 @@ def save_graph(bw_vals, abs_improv, pct_improv):
 #   g.writeEPSfile(RESULTS_DIR + 'latencies')
 #   g.writePDFfile(RESULTS_DIR + 'latencies')
 
-def figure6():
-    "Create and run bandwidth experiment"
+def figure5(graph_num):
+    "Create and run RTT/bandwidth/BDP experiments, as in figure 5"
     start = time()
 
     abs_improvs = []
     pct_improvs = []
-    #bw_vals = [256, 512, 1000, 2000, 3000, 5000, 10000]
-    bw_vals = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+    variables = []
+    if graph_num == 1:
+        variables = ['10ms', '25ms', '50ms', '100ms', '250ms', '500ms', '1500ms']
+    elif graph_num == 2:
+        variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
 
-    for bw in bw_vals:
+    for var in variables:
 
-        cprint("Testing network with bottleneck bandwidth of %f kbps" % bw, "blue")
-        topo = SimpleTopo(bw = bw/1000.0)
-
-        # create very simple mininet
-        net = Mininet(topo=topo, link=TCLink)
-
-        net.start()
-
-        # increase clients rwnd before anything else
-        increase_client_rwnd(net)
-
-        # test stuff before starting
-        cprint("*** Dumping network connections:", "green")
-        dumpNetConnections(net)
-
-        cprint("*** Testing connectivity", "blue")
-        net.pingAll()
-
-        # start server
-        start_server(net)
-
-        # run experiement
-        (abs_i, pct_i) = run_simple_exp(net, args.numruns)
-
-        # end this instance of mininet
-        net.stop()
-
-        abs_improvs.append(abs_i)
-        pct_improvs.append(pct_i)
-
-    end = time()
-    cprint("Experiment took %.3f seconds" % (end - start), "yellow")
-
-    save_graph(bw_vals, abs_improvs, pct_improvs)
-
-def figure5():
-    "Create and run bandwidth experiment"
-    start = time()
-
-    abs_improvs = []
-    pct_improvs = []
-    latency_vals = ['10ms', '25ms', '50ms', '100ms', '250ms', '500ms', '1500ms']
-
-    for lat in latency_vals:
-
-        cprint("Testing network with latency of %s" % lat, "blue")
-        topo = SimpleTopo(delay=lat)
+        if graph_num == 1:
+            cprint("Testing network with latency of %s" % var, "blue")
+            topo = SimpleTopo(delay=var)
+        if graph_num == 2:
+            cprint("Testing network with bottleneck bandwidth of %f kbps" % var, "blue")
+            topo = SimpleTopo(bw = var/1000.0)
 
         # create very simple mininet
         net = Mininet(topo=topo, link=TCLink)
@@ -474,14 +494,17 @@ def figure5():
     cprint("Experiment took %.3f seconds" % (end - start), "yellow")
 
     # TODO - dubie, make a grapher function for this/generalize this one for figs 5, 6, and 7?
-    save_graph(latency_vals, abs_improvs, pct_improvs)
+    save_graph(variables, abs_improvs, pct_improvs)
 
 
 def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
-    figure5()
-    #figure6()
+    #recreate latency vs fct improvement graph
+    figure5(1)
+
+    #recreate bandwidth vs fct improvement graph
+    figure5(2)
 
 if __name__ == '__main__':
     main()
