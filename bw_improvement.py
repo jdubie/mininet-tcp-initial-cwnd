@@ -405,7 +405,7 @@ def figure7(net, num_runs):
 
  
     
-def save_graph(bw_vals, abs_improv, pct_improv):
+def save_graph(bw_vals, abs_improv, pct_improv,title):
 
     assert(len(bw_vals) == len(abs_improv))
     assert(len(bw_vals) == len(pct_improv))
@@ -417,30 +417,27 @@ def save_graph(bw_vals, abs_improv, pct_improv):
     cprint('*************************', 'cyan')
     cprint('******** RESULTS ********', 'cyan')
     cprint('*************************', 'cyan')
-    cprint('   BW  ABS IMP  PCT IMP', 'cyan')
+    cprint('    BW  ABS IMP  PCT IMP', 'cyan')
     for i in range(0,len(bw_vals)):
-        line = '{0:5d}  {1:6d}%  {2:6d}%'.format(bw_vals[i], abs_improv[i], pct_improv[i])
+        line = '{0:6d}  {1:6d}%  {2:6d}%'.format(bw_vals[i], abs_improv[i], pct_improv[i])
         cprint(line, 'cyan')
-        to_file += line + '\n'
+        to_file += '{0:5d} {1:6d} {2:6d}\n'.format(bw_vals[i], abs_improv[i], pct_improv[i])
     cprint ('*************************', 'cyan')
     cprint ('****** END RESULTS ******', 'cyan')
     cprint ('*************************', 'cyan')
 
     # write out results to file
-    f = open(RESULTS_DIR + 'latencies.dat', 'w')
+    f = open(RESULTS_DIR + '%s.dat' % title, 'w')
     f.write(to_file)
     f.close()
 
     # create graph
-#   mypainter = pyx.graph.axis.painter.bar(nameattrs=[pyx.trafo.rotate(45),
-#                                                 pyx.text.halign.right],
-#                                      innerticklength=0.1)
-#   myaxis = pyx.graph.axis.bar(painter=mypainter)
-
-#   g = pyx.graph.graphxy(width=8, x=myaxis)
-#   g.plot(pyx.graph.data.file(RESULTS_DIR + 'latencies.dat', xname=1, y=2), [pyx.graph.style.bar()])
-#   g.writeEPSfile(RESULTS_DIR + 'latencies')
-#   g.writePDFfile(RESULTS_DIR + 'latencies')
+    g = pyx.graph.graphxy(width=8, x=pyx.graph.axis.nestedbar())
+    g.plot([pyx.graph.data.file(RESULTS_DIR + '%s.dat' % title, xname="$0, 0", y=2),
+              pyx.graph.data.file(RESULTS_DIR + '%s.dat' % title, xname="$0, 1", y=3)],
+                     [pyx.graph.style.bar()])
+    g.writeEPSfile(RESULTS_DIR + '%s' % title)
+    g.writePDFfile(RESULTS_DIR + '%s' % title)
 
 def figure5(graph_num):
     "Create and run RTT/bandwidth/BDP experiments, as in figure 5"
@@ -449,12 +446,15 @@ def figure5(graph_num):
     abs_improvs = []
     pct_improvs = []
     variables = []
+    title = ''
     if graph_num == 1:
+        title = 'graph1'
         variables = [10, 25, 50, 100, 250, 500, 1500]
     elif graph_num == 2:
-        variables = [3000, 5000, 10000]
-        #variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+        title = 'graph2'
+        variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
     elif graph_num == 3:
+        title = 'graph3'
         # tuples are (B/W (Kbps), RTT/2 (ms))
         variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
 
@@ -505,18 +505,17 @@ def figure5(graph_num):
     if graph_num == 3:
         variables = [1000, 5000, 10000, 50000, 100000]
 
-    # TODO - dubie, make a grapher function for this/generalize this one for figs 5, 6, and 7?
-    save_graph(variables, abs_improvs, pct_improvs)
+    save_graph(variables, abs_improvs, pct_improvs, title)
 
 
 def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    #figure5(1)
+    figure5(1)
 
     #recreate bandwidth vs fct improvement graph
-    #figure5(2)
+    figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
     figure5(3)
