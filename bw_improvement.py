@@ -200,11 +200,11 @@ def verify_bandwidth(net):
 
 
 
-def query_server(client, serv_ip, run_num):
+def query_server(client, serv_ip, run_num, target=args.target):
 
     # execute command!
     wget_res = client.cmd('time (wget %s:8000/%s -o /tmp/wget%d -P /tmp/%d) 2> %s/wgettime%d ' % 
-            (serv_ip, args.target, run_num, run_num, args.dir, run_num))
+            (serv_ip, target, run_num, run_num, args.dir, run_num))
 
     # extract and return real time as reported by time
     a = open(r"%s/wgettime%d" % (args.dir, run_num), "r")
@@ -346,7 +346,7 @@ def run_simple_exp(net, num_runs):
 
     return (absolute_improve, percent_improve)
 
-def figure7(net, num_runs):
+def run_figure7_exp(net, num_runs):
     "Run experiment"
 
     seconds = args.time
@@ -368,6 +368,7 @@ def figure7(net, num_runs):
 
     cwnd_wget_times = []
     cwnds = [3, 10]
+    filesizes = [2, 3, 4, 7, 10, 15, 30, 50, 250]
 
     for cwnd in cwnds:
 
@@ -382,7 +383,6 @@ def figure7(net, num_runs):
 
         # change up filesize to get
         wget_times = []
-        filesizes = [3, 4, 7, 10, 15, 30, 50]
         for filesize in filesizes:
 
             # test wget times
@@ -390,19 +390,24 @@ def figure7(net, num_runs):
             for r in range(num_runs):
                 cprint("%d ..." % (r + 1), "green")
 
-                times.append( query_server(client, serv_ip, r) )
+                times.append( query_server(client, serv_ip, r, target=filesize) )
 
                 sleep(0.5) # TODO - why are we getting those spurious times? this works fine
 
             avg_time = sum(times)/len(times)
-            wget_times.append(avg_time)
+            wget_times.append(1000*avg_time) #keep it in ms
 
         cwnd_wget_times.append(wget_times)
 
-    absolute_improve = latencies[0] - latencies[1]
-    percent_improve = 100*( cwnd_times[0]/cwnd_times[1] - 1 )
-    print "absolute improvement", absolute_improve, "percentage improvement", percent_improve
+    # now, figure out the absolute and percentage improvements
+    abs_improvs = []
+    pct_improvs = []
+    
+    for i in range(0, len(filesizes)):
+        abs_improvs.append( cwnd_wget_times[0][i] - cwnd_wget_times[1][i] )
+        pct_improvs.append( 100*( cwnd_wget_times[0][i]/cwnd_wget_times[1][i] - 1 ) )
 
+    save_graph(filesizes, abs_improvs, pct_improvs)
  
     
 def save_graph(bw_vals, abs_improv, pct_improv):
@@ -457,6 +462,8 @@ def figure5(graph_num):
     elif graph_num == 3:
         # tuples are (B/W (Kbps), RTT/2 (ms))
         variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
+    elif graph_num == 4:
+        variables = [1] #dummy var
 
     for var in variables:
 
@@ -471,6 +478,8 @@ def figure5(graph_num):
             cprint("and latency of %d ms" % var[1], "blue")
             delay = "%dms" % var[1]
             topo = SimpleTopo(bw = var[0]/1000.0, delay=delay)
+        elif graph_num == 4:
+            topo = SimpleTopo() #use default args
 
         # create very simple mininet
         net = Mininet(topo=topo, link=TCLink)
@@ -490,7 +499,11 @@ def figure5(graph_num):
         start_server(net)
 
         # run experiement
-        (abs_i, pct_i) = run_simple_exp(net, args.numruns)
+        if graph_num == 4:
+            run_figure7_exp(net, args.numruns)
+            return # terminate experiment
+        else:
+            (abs_i, pct_i) = run_simple_exp(net, args.numruns)
 
         # end this instance of mininet
         net.stop()
@@ -508,6 +521,9 @@ def figure5(graph_num):
     # TODO - dubie, make a grapher function for this/generalize this one for figs 5, 6, and 7?
     save_graph(variables, abs_improvs, pct_improvs)
 
+def figure7():
+    #rather not copy/paste code
+    figure5(4)
 
 def main():
     # comment in the figures from the initcwnd paper you want to reproduce
@@ -519,7 +535,10 @@ def main():
     #figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
-    figure5(3)
+    #figure5(3)
+
+    #recreate figure 7
+    figure7()
 
 if __name__ == '__main__':
     main()
