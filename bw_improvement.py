@@ -16,8 +16,10 @@ from subprocess import Popen
 import termcolor as T
 import argparse
 
+# graphing utils
 import pyx
-
+import math
+from pyx.graph import axis
 
 import sys
 import os
@@ -404,13 +406,19 @@ def run_figure7_exp(net, num_runs):
     pct_improvs = []
     
     for i in range(0, len(filesizes)):
-        abs_improvs.append( cwnd_wget_times[0][i] - cwnd_wget_times[1][i] )
-        pct_improvs.append( 100*( cwnd_wget_times[0][i]/cwnd_wget_times[1][i] - 1 ) )
+        abs_improvs.append(int(cwnd_wget_times[0][i] - cwnd_wget_times[1][i]))
+        pct_improvs.append(int(100*( cwnd_wget_times[0][i]/cwnd_wget_times[1][i] - 1 )))
 
-    save_graph(filesizes, abs_improvs, pct_improvs)
+    #save_graph(filesizes, abs_improvs, pct_improvs,'Figure 7: number of Segments vs Improvement')
+
+    title = 'Figure 4'
+    x_units = 'Bandwidth (Kbps)'
+    y_units = 'Improvement (ms)'
+
+    save_graph(filesizes, abs_improvs, pct_improvs, title, x_units, y_units,'figure4')
  
     
-def save_graph(bw_vals, abs_improv, pct_improv,title):
+def save_graph(bw_vals, abs_improv, pct_improv,title, x_units, y_units,filename):
 
     assert(len(bw_vals) == len(abs_improv))
     assert(len(bw_vals) == len(pct_improv))
@@ -418,31 +426,48 @@ def save_graph(bw_vals, abs_improv, pct_improv,title):
     print pct_improv
     
     # print stuff out 
-    to_file = ''
     cprint('*************************', 'cyan')
     cprint('******** RESULTS ********', 'cyan')
     cprint('*************************', 'cyan')
     cprint('    BW  ABS IMP  PCT IMP', 'cyan')
     for i in range(0,len(bw_vals)):
-        line = '{0:6d}  {1:6d}%  {2:6d}%'.format(bw_vals[i], abs_improv[i], pct_improv[i])
+        line = '{0:6d}  {1:7d}  {2:6d}%'.format(bw_vals[i], abs_improv[i], pct_improv[i])
         cprint(line, 'cyan')
-        to_file += '{0:5d} {1:6d} {2:6d}\n'.format(bw_vals[i], abs_improv[i], pct_improv[i])
     cprint ('*************************', 'cyan')
     cprint ('****** END RESULTS ******', 'cyan')
     cprint ('*************************', 'cyan')
+    
+    max1 = max([100,max(abs_improv)])
+    #max2 = max([100,max(pct_improv)])
+    max2 = 50
+    def adjust(x):
+      if max1 == 0:
+        return 0
+      return int(x * max1 / max2)
+    pct_improv = map(adjust,pct_improv)
+
+    to_file = ''
+    for i in range(0,len(bw_vals)):
+        to_file += '{0:5d} {1:6d} {2:6d}\n'.format(int(bw_vals[i]), abs_improv[i], pct_improv[i])
 
     # write out results to file
-    f = open(RESULTS_DIR + '%s.dat' % title, 'w')
+    f = open(RESULTS_DIR + '%s.dat' % filename, 'w')
     f.write(to_file)
     f.close()
 
     # create graph
-    g = pyx.graph.graphxy(width=8, x=pyx.graph.axis.nestedbar())
-    g.plot([pyx.graph.data.file(RESULTS_DIR + '%s.dat' % title, xname="$0, 0", y=2),
-              pyx.graph.data.file(RESULTS_DIR + '%s.dat' % title, xname="$0, 1", y=3)],
-                     [pyx.graph.style.bar()])
-    g.writeEPSfile(RESULTS_DIR + '%s' % title)
-    g.writePDFfile(RESULTS_DIR + '%s' % title)
+    g = pyx.graph.graphxy(width=12,
+          x=pyx.graph.axis.nestedbar(title=x_units),
+          y=pyx.graph.axis.lin(min=0,max=max1,title=y_units),
+          y2=pyx.graph.axis.lin(min=0,max=max2,title='Percentage'))
+
+    g.plot([pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 0", y=2),
+            pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 1", y=3)],
+        [pyx.graph.style.bar()])
+    g.text(g.width/2, g.height + 0.2, title, 
+               [pyx.text.halign.center, pyx.text.valign.bottom, pyx.text.size.Large])
+    g.writeEPSfile(RESULTS_DIR + '%s' % filename)
+    g.writePDFfile(RESULTS_DIR + '%s' % filename)
 
 def figure5(graph_num):
     "Create and run RTT/bandwidth/BDP experiments, as in figure 5"
@@ -451,15 +476,24 @@ def figure5(graph_num):
     abs_improvs = []
     pct_improvs = []
     variables = []
-    title = ''
+    
+    title = 'Figure %d' % graph_num
+    filename = 'figure%d' % graph_num
+    x_units = 'x units'
+    y_units = 'y units'
+
     if graph_num == 1:
-        title = 'graph1'
+        x_units = 'RTT (ms)'
+        y_units = 'Improvement (ms)'
         variables = [10, 25, 50, 100, 250, 500, 1500]
     elif graph_num == 2:
-        title = 'graph2'
+        x_units = 'Bandwidth (kbps)'
+        y_units = 'Improvement (ms)'
         variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+        #variables = [10000]
     elif graph_num == 3:
-        title = 'graph3'
+        x_units = 'BDP (bytes)'
+        y_units = 'Improvement (ms)'
         # tuples are (B/W (Kbps), RTT/2 (ms))
         variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
     elif graph_num == 4:
@@ -518,7 +552,7 @@ def figure5(graph_num):
     if graph_num == 3:
         variables = [1000, 5000, 10000, 50000, 100000]
 
-    save_graph(variables, abs_improvs, pct_improvs, title)
+    save_graph(variables, abs_improvs, pct_improvs, title, x_units, y_units,filename)
 
 def figure7():
     #rather not copy/paste code
@@ -534,7 +568,7 @@ def main():
     figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
-    #figure5(3)
+    figure5(3)
 
     #recreate figure 7
     figure7()
