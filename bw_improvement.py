@@ -341,6 +341,7 @@ def run_simple_exp(net, num_runs):
 
     absolute_improve = latencies[0] - latencies[1]
     percent_improve = 100*( cwnd_times[0]/cwnd_times[1] - 1 )
+    percent_improve = int(percent_improve)
     print "absolute improvement", absolute_improve, "percentage improvement", percent_improve
 
     return (absolute_improve, percent_improve)
@@ -413,19 +414,17 @@ def save_graph(bw_vals, abs_improv, pct_improv):
     
     # print stuff out 
     to_file = ''
-    cprint('*****************', 'cyan')
-    cprint('**** RESULTS ****', 'cyan')
-    cprint('*****************', 'cyan')
-    cprint('BW  ABS IMP  PCT IMP', 'cyan')
+    cprint('*************************', 'cyan')
+    cprint('******** RESULTS ********', 'cyan')
+    cprint('*************************', 'cyan')
+    cprint('   BW  ABS IMP  PCT IMP', 'cyan')
     for i in range(0,len(bw_vals)):
-        #line = '{0:4d}  {1:3d}   {1:3f}'.format(bw_vals[i], abs_improv[i], pct_improv[i])
-        # TODO - dubie, make nicer formatting and graphs
-        line = "%d   %d   %f" % (bw_vals[i], abs_improv[i], pct_improv[i])
+        line = '{0:5d}  {1:6d}%  {2:6d}%'.format(bw_vals[i], abs_improv[i], pct_improv[i])
         cprint(line, 'cyan')
         to_file += line + '\n'
-    cprint ('*****************', 'cyan')
-    cprint ('** END RESULTS **', 'cyan')
-    cprint ('*****************', 'cyan')
+    cprint ('*************************', 'cyan')
+    cprint ('****** END RESULTS ******', 'cyan')
+    cprint ('*************************', 'cyan')
 
     # write out results to file
     f = open(RESULTS_DIR + 'latencies.dat', 'w')
@@ -451,15 +450,16 @@ def figure5(graph_num):
     pct_improvs = []
     variables = []
     if graph_num == 1:
-        variables = ['10ms', '25ms', '50ms', '100ms', '250ms', '500ms', '1500ms']
+        variables = [10, 25, 50, 100, 250, 500, 1500]
     elif graph_num == 2:
-        variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+        variables = [3000, 5000, 10000]
+        #variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
 
     for var in variables:
 
         if graph_num == 1:
             cprint("Testing network with latency of %s" % var, "blue")
-            topo = SimpleTopo(delay=var)
+            topo = SimpleTopo(delay='%dms' % var)
         if graph_num == 2:
             cprint("Testing network with bottleneck bandwidth of %f kbps" % var, "blue")
             topo = SimpleTopo(bw = var/1000.0)
@@ -501,7 +501,7 @@ def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    figure5(1)
+    #figure5(1)
 
     #recreate bandwidth vs fct improvement graph
     figure5(2)
