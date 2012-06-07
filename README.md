@@ -12,6 +12,7 @@ congestion window.
 ### Instructions to reproduce our experiement:
 
 Spin up our EC2 image in the AWS management console web application. AMI: `ami-56ba1a3f`
+* note - the image is only available in the East Coast Virginia and you need to use a c1.medium image
 
 ssh into that server (replace domain name with your instance's domain name)
 
@@ -38,5 +39,7 @@ Finally run the experiment
 
     sudo ./bw_improvement.py
 
-* Results will be printed to stdout and in `results/mininet_yours/latencies.txt`
+* Results will be printed to stdout and in `results/mininet_yours/latencies.pdf`
+for the icwnd_vs_fct.py experiment and the `results/mininet_yours/figureX.pdf` plots,
+where X is the number of the experiment
 * scp `results/mininet_yours/latencies.pdf` to your local computer for a bar graph.
