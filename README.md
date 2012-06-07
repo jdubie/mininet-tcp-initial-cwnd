@@ -17,6 +17,10 @@ ssh into that server (replace domain name with your instance's domain name)
 
     ssh -l ubuntu ec2-xxx-xxx-xxx-xxxx.compute-1.amazonaws.com
 
+Install ethstats
+
+    sudo apt-get install ethstats
+
 Clone our repo
 
     git clone https://github.com/jdubie/mininet-tcp-initial-cwnd.git
