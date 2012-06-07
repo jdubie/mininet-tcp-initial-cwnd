@@ -121,10 +121,10 @@ def parse_ping(ping):
     latencies = []
 
     for ln in ping.split('\n'):
-        str = ln.split('time=')
-        if len(str) > 1:
-            str = str[1].split(' ms')[0]
-            latencies.append(float(str))
+        s = ln.split('time=')
+        if len(s) > 1:
+            s = s[1].split(' ms')[0]
+            latencies.append(float(s))
 
     return latencies
 
@@ -397,8 +397,9 @@ def main():
     cprint("*** Testing connectivity", "blue")
     net.pingAll()
 
-    #verify_bandwidth(net)
-    #verify_latency(net) # TODO - whats wrong with this?
+    verify_latency(net) # TODO - whats wrong with this?
+    sleep(2)
+    verify_bandwidth(net)
 
     if args.cli:
         # Run CLI instead of experiment
