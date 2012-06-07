@@ -41,7 +41,7 @@ parser.add_argument('--target', '-g',
 parser.add_argument('--bw_net', '-b',
                     type = float,
                     help="Bandwidth of network",
-                    default="9.6")
+                    default="1.2")
 
 parser.add_argument('--latency', '-l',
                     help="Latency of network",
