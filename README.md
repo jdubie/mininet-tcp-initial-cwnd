@@ -11,7 +11,7 @@ congestion window.
 
 ### Instructions to reproduce our experiement:
 
-Spin up our EC2 image in the AWS management console web application. AMI: `ami-0a339263`
+Spin up our EC2 image in the AWS management console web application. AMI: `ami-56ba1a3f`
 
 ssh into that server (replace domain name with your instance's domain name)
 
