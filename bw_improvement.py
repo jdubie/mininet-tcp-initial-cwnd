@@ -340,7 +340,7 @@ def run_simple_exp(net, num_runs):
             sleep(0.5) # TODO - why are we getting those spurious times? this works fine
 
         avg_time = sum(times)/len(times)
-        latency = int(avg_time * 1000)
+        latency = avg_time * 1000
         print times
 
         cwnd_times.append(avg_time)
@@ -348,7 +348,6 @@ def run_simple_exp(net, num_runs):
 
     absolute_improve = latencies[0] - latencies[1]
     percent_improve = 100*( cwnd_times[0]/cwnd_times[1] - 1 )
-    percent_improve = int(percent_improve)
     print "absolute improvement", absolute_improve, "percentage improvement", percent_improve
 
     return (absolute_improve, percent_improve)
@@ -412,7 +411,7 @@ def run_figure7_exp(net, num_runs):
     
     for i in range(0, len(filesizes)):
         abs_improvs.append(int(cwnd_wget_times[0][i] - cwnd_wget_times[1][i]))
-        pct_improvs.append(int(100*( cwnd_wget_times[0][i]/cwnd_wget_times[1][i] - 1 )))
+        pct_improvs.append(100*( cwnd_wget_times[0][i]/cwnd_wget_times[1][i] - 1 ))
 
     #save_graph(filesizes, abs_improvs, pct_improvs,'Figure 7: number of Segments vs Improvement')
 
@@ -436,31 +435,22 @@ def save_graph(bw_vals, abs_improv, pct_improv,title, x_units, y_units,filename)
     cprint('*************************', 'cyan')
     cprint('    BW  ABS IMP  PCT IMP', 'cyan')
     for i in range(0,len(bw_vals)):
-        line = '{0:6d}  {1:7d}  {2:6d}%'.format(bw_vals[i], abs_improv[i], pct_improv[i])
+        line = '{0:6d}  {1:7d}  {2:6d}%'.format(int(bw_vals[i]), int(abs_improv[i]), int(pct_improv[i]))
         cprint(line, 'cyan')
     cprint ('*************************', 'cyan')
     cprint ('****** END RESULTS ******', 'cyan')
     cprint ('*************************', 'cyan')
     
-    max1 = max([100,max(abs_improv)])
-    #max2 = max([100,max(pct_improv)])
-    max2_pre = max(pct_improv)
-    print "max2_pre: ", max2_pre
+    max1 = 10000
     max2 = 50
-    def expod(x): return 2 ** x
-    def adjust(x):
-      if max1 == 0:
-        return 0
-      return int(x * max2_pre / max2_exp)
-    pct_improv = map(expod,pct_improv)
-    max2_exp = max(pct_improv)
-    print "max2_exp: ", max2_exp
+    def adjust(x): return int(10 **  (x / (50/4)))
     pct_improv = map(adjust,pct_improv)
-    print "after final map: ", pct_improv
 
     to_file = ''
     for i in range(0,len(bw_vals)):
-        to_file += '{0:5d} {1:6d} {2:6d}\n'.format(int(bw_vals[i]), abs_improv[i], pct_improv[i])
+        to_file += '{0:5d} {1:6d} {2:6f}\n'.format(int(bw_vals[i]), int(abs_improv[i]), pct_improv[i])
+
+    print pct_improv
 
     # write out results to file
     f = open(RESULTS_DIR + '%s.dat' % filename, 'w')
@@ -474,7 +464,7 @@ def save_graph(bw_vals, abs_improv, pct_improv,title, x_units, y_units,filename)
           y2=pyx.graph.axis.lin(min=0,max=max2,title='Percentage'))
 
     g.plot([pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 0", y=2),
-            pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 1", y2=3)],
+            pyx.graph.data.file(RESULTS_DIR + '%s.dat' % filename, xname="$1, 1", y=3)],
         [pyx.graph.style.bar()])
     g.text(g.width/2, g.height + 0.2, title, 
                [pyx.text.halign.center, pyx.text.valign.bottom, pyx.text.size.Large])
@@ -502,6 +492,7 @@ def figure5(graph_num):
         x_units = 'Bandwidth (kbps)'
         y_units = 'Improvement (ms)'
         variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
+        #variables = [3000, 5000, 10000]
     elif graph_num == 3:
         x_units = 'BDP (bytes)'
         y_units = 'Improvement (ms)'
@@ -583,10 +574,10 @@ def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    #figure5(1)
+    figure5(1)
 
     #recreate bandwidth vs fct improvement graph
-    #figure5(2)
+    figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
     figure5(3)
