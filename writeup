@@ -7,24 +7,26 @@ Key Result: Increasing TCP's initial congestion window can significantly improve
 
 Sources:
 
-TODO: [1] <nanditas initial cwnd paper>
+[1] Nandita Dukkipati, Tiziana Refice, Yuchung Cheng, Jerry Chu, Natalia Sutin, Amit Agarwal, Tom Herbert, Arvind Jain. <a href="https://developers.google.com/speed/articles/tcp_initcwnd_paper.pdf">An Argument for Increasing TCP's Initial Congestion Window</a>
+ACM Computer Communication Review, 2010 
 
-[2] \small{S. Ramachandran, and A. Jain. Web page stats: size and number of resources.\\
-http://code.google.com/speed/articles/web-metrics.html, 2010 \\} 
+[2] S. Ramachandran, and A. Jain. <a href="http://code.google.com/speed/articles/web-metrics.html">Web page stats: size and number of resources.</a> 2010.
 
-TODO: [3] Blog post on changing initcwnd
+[3] Thomas Habets <a href="http://blog.habets.pp.se/2011/10/Optimizing-TCP-slow-start">Optimizing Slow Start</a>. 2011.
+
+[4] Nandita Dukkipati and Nick McKeown. <a href="http://yuba.stanford.edu/~nanditad/flowCompTime-dukkipati.pdf">Why Flow-Completion Time is the Right Metric for Congestion Control</a> ACM SIGCOMM Computer Communication Review Volume 36, Issue 1, January 2006. 
 
 Introduction:
 
-TCP flow completion time has recently become an active area of research, as networks have increased significantly in capacity but typical users of the web haven't seen a corresponding increase in performance. The majority of users judge performance primarily on TCP flow completion time (i.e., how long it takes for web pages to load), making it a very important metric for judging the quality of service provided by the internet. Also, the majority of traffic that internet users produce consists of small and short lived TCP flows; the average TCP flow size is around 386kb as of 2010 [2]. Due to their small size, a significant portion of flows never leave the slow start stage and thus never reach their full capacity sending rates. This unneccesarily prolongs the lifetime of the TCP flows, decreasing the quality of service perceived by typical users browsing the internet. 
+TCP flow completion time has recently become an active area of research, as networks have increased significantly in capacity but typical users of the web haven't seen a corresponding increase in performance. The majority of users judge performance primarily on TCP flow completion time (i.e., how long it takes for web pages to load), making it a very important metric for judging the quality of service provided by the internet. The majority of traffic that internet users produce consists of small and short lived TCP flows; the average TCP flow size is around 386kb as of 2010 [2]. Due to their small size, a significant portion of flows never leave the slow start stage and thus never reach their full capacity sending rates. This unneccesarily prolongs the lifetime of the TCP flows, decreasing the quality of service perceived by typical users browsing the internet. 
 
 In our project, we reproduce results from a paper entitled "An Argument for Increasing TCP's Initial Congestion Window" that addresses this problem [1]. The main idea of the paper is very simple: increasing the initial rate at which hosts send data should improve the average completion time of TCP flows on the Web. Because most flows are short lived, increasing the initial congestion window should eliminate a large fraction of the round trips that short-lived flows require to complete. The paper proposes increasing the initial congestion (initcwnd) from the (previous) Linux default of 3 segments (~4KB) to 10 segments (~15KB), and presents experimental data gathered at frontend Google data centers to support this proposed improvement.
 
-The figure from the paper that we attempt to replicate is shown below in Figure X. In this figure, they plot the average improvement in flow completion time from increasing the initcwnd from 3 to 10 segments as a function of various aspects of clients' connections. The top chart presents average improvement bucketed by clients' round trip times (RTTs), the middle bucketed by clients' bandwidth, and the bottom bucketed by clients' bandwidth-delay product (BDP). Reproducing this figure will help us gain insight into what type of connections benefit from this change the most.
+The figure from the paper above (henceforth referred to as the initcwnd paper) that we attempt to replicate is shown below in Figure 3. In this figure, they plot the average improvement in flow completion time from increasing the initcwnd from 3 to 10 segments as a function of various aspects of clients' connections. The top chart presents average improvement bucketed by clients' round trip times (RTTs), the middle bucketed by clients' bandwidth, and the bottom bucketed by clients' bandwidth-delay product (BDP). Reproducing this figure will help us gain insight into what type of connections benefit from this change the most.
 
 Methods:
 
-We used Mininet to construct a very simple network of a client and server node connected by a single switch (see Figure 1 below?). We control the parameters of the network (RTT, bandwidth, etc.) by modifying the parameters of the link connecting the client to the middle switch. Unless otherwise stated, we use the average RTT and bandwidth of Google datacenter clients found in the paper (70ms and 1.2Mbps, respectively) [1]. 
+We used Mininet to construct a very simple network of a client and server node connected by a single switch. We control the parameters of the network (RTT, bandwidth, etc.) by modifying the parameters of the link connecting the client to the middle switch. Unless otherwise stated, we use the average RTT and bandwidth of Google datacenter clients found in the initcwnd paper (70ms and 1.2Mbps, respectively) [1]. 
 
 On the server node, we emulate a front-end Google server using a modified version of the python "SimpleHTTPServer" class that serves static content over HTTP. We made a simple modification to enable it to generate and send arbitrary length files on the fly. We use the 'ip route' tool to change the initial congestion window that the server uses, as described in [3]. On the client's side, we use the unix utility 'wget' to download files from the server, and 'time' to determine how long it took.
 
@@ -46,24 +48,21 @@ All graphs below show the absolute and percentage improvement in flow completion
 
 <present our RTT graphs, side by side>
 
-Our experiement varying the RTT in the network closely match that of the initcwnd paper. As RTT increases, we see the absolute improvement of the FCT grow linearly. Intuitively, this is because increasing the initcwnd from 3 to 10 should eliminate a constant number of round trips. There is no improvement in our experiment in a 20msec RTT network because those flows are bandwidth limited. Increasing the badwidth from the default of 1.2Mbps to 100Mbps and repeating the experiment shows an improvement of about 20% with a 20msec RTT. 
+Our experiement varying the RTT in the network closely match that of the initcwnd paper. As RTT increases, we see the absolute improvement of the FCT grow linearly. Intuitively, this is because increasing the initcwnd from 3 to 10 should eliminate a constant number of round trips. There is no improvement in our experiment in a 20msec RTT network because those flows quickly become bandwidth limited. Increasing the badwidth from the default of 1.2Mbps to 100Mbps and repeating the experiment shows an improvement of about 20% with a 20msec RTT. 
 
 This contrast illustrates a key facet of the results in the initcwnd paper. In their graphs plotting FCT improvement as a function of some aspect of client's connections, they *are not* controlling for other aspects of client's connections. For example, their graph of RTT vs FCT showed a modest improvement in 20msec RTT connections because those connections generally have *more bandwidth* as well, and thus aren't limited by it.
 
-<bw graphs, side by side>
+The results from our experiment varying the bandwidth are very different from those of the initcwnd paper, for precisely this reason. In our experiment, we kept RTT constant, whereas in the paper, the connections with low bandwidth also likely had high RTTs. Intuitively, increasing the initcwnd in a very low bandwidth and average RTT network *shouldn't* change the FCT, because the flow will immediately be limited by bandwidth. The initcwnd paper itself acknowledges that low bandwidth clients generally have high RTTs, explaining the large improvement in their graph [1]. Unfortunately, the paper didn't disclose the average RTT of the connections in each bandwidth bucket (although they did for another experiment on a slower data center). It would be trivial to assign a custom latency to each different trial such that our graph matches their graph, but this would be attempting to recreate the results of the paper in a disingenuous way, so we kept our original graph in instead.
 
-Our experiment varying the bandwidth is very different from that of the initcwnd paper, for precisely this reason. In our experiment, we kept RTT constant, whereas in the paper, the connections with low bandwidth also likely had high RTTs. Intuitively, increasing the initcwnd in a very low bandwidth/average RTT network *shouldn't* change the FCT, because the flow will immediately be limited by bandwidth. The paper itself acknowledges that low bandwidth clients generally have high RTTs, explaining the large improvement in their graph [1]. Unfortunately, the paper didn't disclose the average RTT of the connections in each bandwidth bucket (although they did for another experiment on a slower data center). It would be trivial to assign a custom latency to each different trial such that our graph matches theirs, but this would be attempting to recreate the results of the paper in a disingenuous way, so we kept our original graph in instead.
+Finally, our experiment varying the BDP matches reasonably well with the graph of the paper. Once again, the only trials that don't match well are the lower buckets of 1000 and 5000 BDP. This is once again due to low BDP flows being bandwidth-limited, thus increasing the initcwnd does next to nothing. Curiously, the initcwnd paper's BDP graph *does* report a speedup on the lower end of the BDP spectrum, despite the fact that these flows also have low RTTs. This is likely because an increased initcwnd promotes faster loss recovery. As the paper points out, a larger initcwnd increases the chances that a lost packet will lead to 3 duplicate acks because more packets are in flight at once, thus increasing the chance that the connection recovers the lost packet via Fast Retransmit rather than waiting for a timeout. 
 
-Finally, our experiment varying the BDP matches reasonably well with the graph of the paper except in the low BDP buckets. Once again, the only trials that don't match well are the lower buckets of 1000 and 5000 BDP. 
-
-
-Explain BDP - use correlations in the paper, show how it works out
+While this is very plausible, it's very hard to test in Mininet with any sort of statistical significance. When we add in a high random drop rate (such that average flow completion time is still reasonable) and increase the number of trials substantially, we still can't produce a dependable improvement. The initcwnd paper has the advantage of having over 10 billion timed TCP connections at their disposal, something we can't reproduce.
 
 Lessons learned:
 
-Perhaps our largest takeaway from this project is an increased ability to debug problems down to the kernel. We spent the vast majority of our time trying to figure out why setting the initial congestion window via ip route wasn't working. We tried everything we could before diving into the kernel, and even then we only managed to fix the issue by a stroke of luck. It was extremely fortuitious that setting the initcwnd via ip route was fixed in Linux v3.3. If this hadn't been the case, it is unclear whether we would have had the necessary time to create a patch for the kernel. Installing Mininet with the new kernel also turned out to be unexpectedly hard, but it didn't require nearly as much effort or time to fix.
+Perhaps our largest takeaway from this project is an increased ability to debug problems down to the kernel. We spent the vast majority of our time trying to figure out why setting the initial congestion window via ip route wasn't working. We tried everything we could before diving into the kernel, and even then we only managed to fix the issue by a stroke of luck. It was extremely fortuitious that setting the initcwnd via ip route was fixed in Linux v3.3. If this hadn't been the case, it is unclear whether we would have had the necessary time to create a patch for the kernel. Installing Mininet with the new kernel also turned out to be unexpectedly hard, but it didn't require nearly as much effort nor time to fix.
 
-This project taught us the important lesson to not under-estimate the difficulty of research and the difficulty of getting experiments to work. At the beginning of the project, we set our sights on reproducing research from two papers: the initial cwd paper and a paper on 'RCP', a new transport protocol similar to TCP [4]. Implementing RCP would've required significant modifications to both the host's networking stack and the switch's stack as well. In retrospect, this seems like a near-impossible goal for a four-week research project. If we hadn't run into the problem of setting the initcwnd, we would've had 3 weeks to do this, as we had the majority of our code in place to reproduce results from the initcwnd paper by the first week. Even if this was the case, we still likely wouldn't have had the time to implement RCP. Considering the unexpected problems we ran into, RCP surely would have posed more unpredictable difficulties. Generally, undertaking a research project without a tested and proven way of setting parameters and conducting experiments *always* takes longer than expected. Its purely a matter of chance whether things work as planned or not; unfortunately we were stuck with the latter case. Next time, we will have the wisdom to make a more realistic estimate of what we can accomplish in a certain amount of time.
+This project taught us the important lesson to not under-estimate the difficulty of research and the difficulty of getting experiments to work. At the beginning of the project, we set our sights on reproducing research from two papers: the initial cwd paper and a paper on 'RCP', a new transport protocol similar to TCP [4]. Implementing RCP would've required significant modifications to both the host's networking stack and the switch's stack as well. In retrospect, this seems like a near-impossible goal for a four-week research project. If we hadn't run into the problem of setting the initcwnd, we would've had 3 weeks to do this, as we had the majority of our code in place to reproduce results from the initcwnd paper by the first week. Even if this was the case, we still likely wouldn't have had the time to implement RCP. Considering the unexpected problems we ran into, RCP surely would have posed more unpredictable difficulties. Generally, undertaking a research project without a tested and proven way of setting parameters and conducting experiments *always* takes longer than expected. It's purely a matter of chance whether things work as planned or not; unfortunately we were stuck with the latter case. Next time, we will have the wisdom to make a more realistic estimate of what we can accomplish in a certain amount of time.
 
 
 
@@ -119,52 +118,3 @@ BDP --->>> (default params)
 *************************
 ****** END RESULTS ******
 *************************
-
-
-
-
-
-TODO: scrap? The results (shown below) are similar to the results presented in the initcwnd paper, with the notable exception of the bandwidth vs improved flow completion time (FCT).
-
-
-##### TODO - get latency verify working
-      - try tcp_probe one last time
-      - verify that ip route actually works using wireshark on ami
-
-- mininet, default values used.
-- modified version of python simplehttpserver + wget
-- kernel modification 
-
--validation
-  -verify b/w, latency (probably should get that working)
-  -verify ip route! 
-    -heuristic w/ time
-    -tcpdump/wireshark
-
-
-
-\section{Current Progress}
-
-At this point in our work, we have most of the code in place to replicate results from the initial \emph{cwnd} paper. However, we are temporarily blocked by the inability to change the initial congestion windows and receiver windows in mininet hosts. Once we squash this elusive bug, we will theoretically be able to replicate results from the paper. \\
-
-Implementing and testing RCP in Mininet may prove to be a slightly larger challenge. In order to implement it, we have to modify the switches in our network to continually calculate the share of the bandwidth $R(t)$ that each flow will receive. Furthermore, we have to modify the end host networking stack to include a layer 3.5 'shim', which will contain the rate fields that TCP will base its window size on [2]. Unfortunately, the only implementations of this that exist are designed for the $ns2$ network simulator. We're in contact with the primary author of the paper, Nandita Dukkipati, who can hopefully guide us through implementing RCP in Mininet.
-
-\section{References}
-
-[2] \small{RCP Frequently Asked Questions: Implementation. \\
-http://yuba.stanford.edu/rcp/faq.html\#implementation \\}
-
-
-In our project, we plan to compare two proposed improvements to TCP designed to help alleviate this problem: increasing the initial congestion window, and implementing 'rate control protocol' (RCP). 
-The first solution, increasing the \emph{init cwnd}, simply proposes to increase the starting window size of TCP connections. 
-The second solution, RCP, proposes additions to the host networking stack and network switches which provide hosts a reliable way to set their window size such that every flow gets a maximal even share of the network. \\
-
-The rest of our paper will proceed as follows. 
-First, we will describe the initial congestion window paper in depth and reproduce relevant results from it. 
-Then, we will examine the paper on RCP in depth and reproduce its main results as well.
-We will conclude with a comparison of the two methods and their performance. \\
-
-
-
-
-The majority of the TCP flows on the internet are small and short lived; the average flow size is 386kb [1].
