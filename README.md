@@ -30,9 +30,13 @@ Start open openvswitch
 
     sudo ./start_openswitch.sh
 
+Reproduce the initcwnd verification figure
+
+    sudo ./icwnd_vs_fct.py
+
 Finally run the experiment
 
-    sudo ./run_experiment.py
+    sudo ./bw_improvement.py
 
 * Results will be printed to stdout and in `results/mininet_yours/latencies.txt`
 * scp `results/mininet_yours/latencies.pdf` to your local computer for a bar graph.
