@@ -41,7 +41,7 @@ parser.add_argument('--target', '-g',
 parser.add_argument('--bw_net', '-b',
                     type = float,
                     help="Bandwidth of network",
-                    default="1.2")
+                    default="9.6")
 
 parser.add_argument('--latency', '-l',
                     help="Latency of network",
@@ -501,30 +501,30 @@ def figure5(graph_num):
     elif graph_num == 2:
         x_units = 'Bandwidth (kbps)'
         y_units = 'Improvement (ms)'
-        #variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
-        variables = [56, 256]
+        variables = [56, 256, 512, 1000, 2000, 3000, 5000, 10000]
     elif graph_num == 3:
         x_units = 'BDP (bytes)'
         y_units = 'Improvement (ms)'
-        # tuples are (B/W (Kbps), RTT/2 (ms))
-        #variables = [(25, 20), (50, 50), (100, 50), (250, 100), (250, 200)]
-        variables = [(50, 50), (100, 50), (250, 100), (250, 200)]
+        # tuples are (B/W (KiloBytes per second), RTT (ms))
+	# The paper says BDP is in bytes, so it must be the case that its KB
+        variables = [(20, 50), (50, 100), (100, 100), (250, 200), (250, 400)]
+        #variables = [(50, 100), (100, 100), (250, 200), (250, 400)]
     elif graph_num == 4:
         variables = [1] #dummy var
 
     for var in variables:
 
         if graph_num == 1:
-            cprint("Testing network with latency of %s" % var, "blue")
+            cprint("Testing network with a RTT of %s" % var, "blue")
             topo = SimpleTopo(delay='%dms' % (var/2))
         elif graph_num == 2:
             cprint("Testing network with bottleneck bandwidth of %f kbps" % var, "blue")
             topo = SimpleTopo(bw = var/1000.0)
         elif graph_num == 3:
             cprint("Testing network with bottleneck bandwidth of %f kbps" % var[0], "blue")
-            cprint("and latency of %d ms" % var[1], "blue")
-            delay = "%dms" % var[1]
-            topo = SimpleTopo(bw = var[0]/1000.0, delay=delay)
+            cprint("and a RTT of %d ms" % var[1], "blue")
+            delay = "%dms" % (var[1]/2)
+            topo = SimpleTopo(bw = var[0]/125.0, delay=delay) #make sure its KBps, not Kbps
         elif graph_num == 4:
             topo = SimpleTopo() #use default args
 
@@ -534,6 +534,10 @@ def figure5(graph_num):
 
         # increase clients rwnd before anything else
         increase_client_rwnd(net)
+
+    	if args.cli:
+            # Run CLI before experiment
+            CLI(net)
 
         # test stuff before starting
         cprint("*** Dumping network connections:", "green")
@@ -579,13 +583,13 @@ def main():
     # comment in the figures from the initcwnd paper you want to reproduce
 
     #recreate latency vs fct improvement graph
-    figure5(1)
+    #figure5(1)
 
     #recreate bandwidth vs fct improvement graph
     #figure5(2)
 
     #recreate bandwidth delay product vs fct improvement graph
-    #figure5(3)
+    figure5(3)
 
     #recreate figure 7
     #figure7()
