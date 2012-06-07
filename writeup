@@ -42,13 +42,20 @@ To further verify that ip route was working, we inspected the actual packets sen
 
 Results:
 
-The results (shown below) are similar to the results presented in the initcwnd paper, with the notable exception of the bandwidth vs improved flow completion time (FCT).
+All graphs below show the absolute and percentage improvement in flow completion time gained from increasing the initcwnd from 3 to 10. Note that the absolute improvement is on a logarithmic scale.
 
-<present ours and papers, side by side>
+<present our RTT graphs, side by side>
 
-Explain RTT graph - everything works out as expected.
+Our experiement varying the RTT in the network closely match that of the initcwnd paper. As RTT increases, we see the absolute improvement of the FCT grow linearly. Intuitively, this is because increasing the initcwnd from 3 to 10 should eliminate a constant number of round trips. There is no improvement in our experiment in a 20msec RTT network because those flows are bandwidth limited. Increasing the badwidth from the default of 1.2Mbps to 100Mbps and repeating the experiment shows an improvement of about 20% with a 20msec RTT. 
 
-Explain b/w graph - in the paper, clients with low b/w aren't iid w/ respect to latency, ours are
+This contrast illustrates a key facet of the results in the initcwnd paper. In their graphs plotting FCT improvement as a function of some aspect of client's connections, they *are not* controlling for other aspects of client's connections. For example, their graph of RTT vs FCT showed a modest improvement in 20msec RTT connections because those connections generally have *more bandwidth* as well, and thus aren't limited by it.
+
+<bw graphs, side by side>
+
+Our experiment varying the bandwidth is very different from that of the initcwnd paper, for precisely this reason. In our experiment, we kept RTT constant, whereas in the paper, the connections with low bandwidth also likely had high RTTs. Intuitively, increasing the initcwnd in a very low bandwidth/average RTT network *shouldn't* change the FCT, because the flow will immediately be limited by bandwidth. The paper itself acknowledges that low bandwidth clients generally have high RTTs, explaining the large improvement in their graph [1]. Unfortunately, the paper didn't disclose the average RTT of the connections in each bandwidth bucket (although they did for another experiment on a slower data center). It would be trivial to assign a custom latency to each different trial such that our graph matches theirs, but this would be attempting to recreate the results of the paper in a disingenuous way, so we kept our original graph in instead.
+
+Finally, our experiment varying the BDP matches reasonably well with the graph of the paper except in the low BDP buckets. Once again, the only trials that don't match well are the lower buckets of 1000 and 5000 BDP. 
+
 
 Explain BDP - use correlations in the paper, show how it works out
 
@@ -62,12 +69,62 @@ This project taught us the important lesson to not under-estimate the difficulty
 
 
 
+************* EC2 results (for before we have graphs working) **********************
+
+RTT --->>>
+*************************
+******** RESULTS ********
+*************************
+    RTT  ABS IMP  PCT IMP
+    20        0       0%
+    50       29       7%
+   100       88      16%
+   200      204      22%
+   500      507      24%
+  1000     1016      24%
+  3000     3011      24%
+*************************
+****** END RESULTS ******
+*************************
+
+BW --->>> (default params)
+[8, 3, 20, 45, 72, 80, 77, 70]
+[0, 0, 2, 9, 20, 24, 25, 23]
+*************************
+******** RESULTS ********
+*************************
+    BW  ABS IMP  PCT IMP
+    56        8       0%
+   256        3       0%
+   512       20       2%
+  1000       45       9%
+  2000       72      20%
+  3000       80      24%
+  5000       77      25%
+ 10000       70      23%
+*************************
+****** END RESULTS ******
+*************************
+
+BDP --->>> (default params)
+*************************
+******** RESULTS ********
+*************************
+    BW  ABS IMP  PCT IMP
+  1000        2       0%
+  5000       37       3%
+ 10000       67      10%
+ 50000      214      24%
+100000      419      25%
+*************************
+****** END RESULTS ******
+*************************
 
 
 
 
 
-
+TODO: scrap? The results (shown below) are similar to the results presented in the initcwnd paper, with the notable exception of the bandwidth vs improved flow completion time (FCT).
 
 
 ##### TODO - get latency verify working
